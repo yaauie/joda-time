@@ -27,6 +27,7 @@ import org.joda.time.DateTimeConstants;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Interval;
 import org.joda.time.chrono.GJChronology;
 
 /**
@@ -860,6 +861,81 @@ public class TestDateTimeFormat extends TestCase {
         f = DateTimeFormat.forPattern("yy/MM/dd");
         assertEquals(dt, f.parseDateTime("04/03/09"));
         assertEquals(dt, f.parseDateTime("2004/03/09"));
+    }
+
+    public void testParseInterval_multiGranularity() {
+        DateTimeParser[] parsers = {
+            DateTimeFormat.forPattern("yyyy-MM").getParser(),
+            DateTimeFormat.forPattern("yyyy-MM-dd").getParser()
+        };
+        DateTimeFormatter f = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
+
+        String dayString = "2016-05-27";
+        String monthString = "2016-05";
+
+        DateTime dayDateTime = f.parseDateTime(dayString);
+        Interval dayInterval = f.parseInterval(dayString);
+        assertEquals(dayDateTime, dayInterval.getStart());
+        assertEquals(dayDateTime.plusDays(1), dayInterval.getEnd());
+
+        DateTime monthDateTime = f.parseDateTime(monthString);
+        Interval monthInterval = f.parseInterval(monthString);
+        assertEquals(monthDateTime, monthInterval.getStart());
+        assertEquals(monthDateTime.plusMonths(1), monthInterval.getEnd());
+    }
+
+    public void testParseInterval_yearGranularity() {
+        DateTime dt = new DateTime(2016, 1, 1, 0, 0);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("yyyy");
+        Interval result = f.parseInterval("2016");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusYears(1), result.getEnd());
+    }
+
+    public void testParseInterval_monthGranularity() {
+        DateTime dt = new DateTime(2016, 5, 1, 0, 0);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("yyyy");
+        Interval result = f.parseInterval("2016-05");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusMonths(1), result.getEnd());
+    }
+
+    public void testParseInterval_dayGranularity() {
+        DateTime dt = new DateTime(2016, 5, 27, 0, 0);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("yyyy-MM-dd");
+        Interval result = f.parseInterval("2016-05-27");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusDays(1), result.getEnd());
+    }
+
+    public void testParseInterval_hourGranularity() {
+        DateTime dt = new DateTime(2016, 5, 27, 17, 00);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH");
+        Interval result = f.parseInterval("2016-05-27T17");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusHours(1), result.getEnd());
+    }
+
+    public void testParseInterval_isoWeekGranularity() {
+        DateTime dt = new DateTime(2012, 4, 23, 00, 00);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("xxxx-'W'w");
+        Interval result = f.parseInterval("2012-W17");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusWeeks(1), result.getEnd());
+    }
+
+    public void testParseInterval_isoWeekDayGranularity() {
+        DateTime dt = new DateTime(2012, 4, 25, 00, 00);
+
+        DateTimeFormatter f = DateTimeFormat.forPattern("xxxx-'W'w-e");
+        Interval result = f.parseInterval("2012-W17-3");
+        assertEquals(dt, result.getStart());
+        assertEquals(dt.plusDays(1), result.getEnd());
     }
 
     //-----------------------------------------------------------------------

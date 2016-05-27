@@ -474,6 +474,21 @@ public class DateTimeParserBucket {
         
         return millis;
     }
+
+    public DateTimeFieldType granularity() {
+        SavedField[] savedFields = iSavedFields;
+        int count = iSavedFieldsCount;
+        if (count == 0) {
+            return null;
+        }
+        if (iSavedFieldsShared) {
+            // clone so that sort does not affect saved state
+            iSavedFields = savedFields = (SavedField[])iSavedFields.clone();
+            iSavedFieldsShared = false;
+        }
+        sort(savedFields, count);
+        return savedFields[count-1].iField.getType();
+    }
     
     /**
      * Sorts elements [0,high). Calling java.util.Arrays isn't always the right

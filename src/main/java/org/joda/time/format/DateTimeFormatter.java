@@ -21,8 +21,12 @@ import java.util.Locale;
 
 import org.joda.time.Chronology;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeField;
+import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.DurationFieldType;
+import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
@@ -983,6 +987,38 @@ public class DateTimeFormatter {
                     dt.setZone(iZone);
                 }
                 return dt;
+            }
+        } else {
+            newPos = ~newPos;
+        }
+        throw new IllegalArgumentException(FormatUtils.createErrorMessage(text, newPos));
+    }
+
+    public Interval parseInterval(String text) {
+        InternalParser parser = requireParser();
+
+        Chronology chrono = selectChronology(null);
+        DateTimeParserBucket bucket = new DateTimeParserBucket(0, chrono, iLocale, iPivotYear, iDefaultYear);
+        int newPos = parser.parseInto(bucket, text, 0);
+        if (newPos >= 0) {
+            if (newPos >= text.length()) {
+                long millis = bucket.computeMillis(true, text);
+                if (iOffsetParsed && bucket.getOffsetInteger() != null) {
+                    int parsedOffset = bucket.getOffsetInteger();
+                    DateTimeZone parsedZone = DateTimeZone.forOffsetMillis(parsedOffset);
+                    chrono = chrono.withZone(parsedZone);
+                } else if (bucket.getZone() != null) {
+                    chrono = chrono.withZone(bucket.getZone());
+                }
+                DateTime intervalStart = new DateTime(millis, chrono);
+                if (iZone != null) {
+                    intervalStart = intervalStart.withZone(iZone);
+                }
+
+                final DurationFieldType granularity = bucket.granularity().getDurationType();
+                DateTime intervalEnd = intervalStart.withFieldAdded(granularity, 1);
+
+                return new Interval(intervalStart, intervalEnd);
             }
         } else {
             newPos = ~newPos;
